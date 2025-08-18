@@ -1,0 +1,34 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [gateway, services/users, services/workouts, services/nutrition, services/achievements]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Build & Test
+        working-directory: ${{ matrix.service }}
+        run: |
+          mvn -q -ntp test
+          mvn -q -ntp -DskipTests package
+      - name: Build Docker image
+        run: docker build -t ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }} -f ${{ matrix.service }}/Dockerfile .
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push image
+        run: docker push ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
