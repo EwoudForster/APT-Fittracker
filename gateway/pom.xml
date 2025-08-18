@@ -38,40 +38,32 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- Spring Cloud Gateway (WebFlux-based) -->
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-gateway</artifactId>
-    </dependency>
+  <!-- Spring Cloud Gateway (WebFlux-based) -->
+  <dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-gateway</artifactId>
+  </dependency>
 
-    <!-- Spring Boot Actuator (metrics/health endpoints) -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
+  <!-- Spring Boot Actuator (metrics/health endpoints) -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+  </dependency>
 
-    <!-- Bean Validation (Jakarta Validation API) -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
+  <!-- Bean Validation (Jakarta Validation API) -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-validation</artifactId>
+  </dependency>
 
-    <!-- Test dependencies (inclusief JUnit 5, Mockito, enz.) -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
+  <!-- Security (nodig voor ServerHttpSecurity in test) -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+  </dependency>
 
-    <!-- WireMock 3: standalone JAR voor API-stubs in tests -->
-    <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
-      <version>3.6.0</version>
-      <scope>test</scope>
-    </dependency>
   <!-- OAuth2 login (client) -->
-      <dependency>
+  <dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-oauth2-client</artifactId>
   </dependency>
@@ -81,7 +73,30 @@
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
   </dependency>
-  </dependencies>
+
+  <!-- Test dependencies -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+  </dependency>
+
+  <!-- Security test support -->
+  <dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-test</artifactId>
+    <scope>test</scope>
+  </dependency>
+
+  <!-- WireMock 3: standalone JAR voor API-stubs in tests -->
+  <dependency>
+    <groupId>org.wiremock</groupId>
+    <artifactId>wiremock-standalone</artifactId>
+    <version>3.6.0</version>
+    <scope>test</scope>
+  </dependency>
+</dependencies>
+
 
   <build>
     <plugins>
