@@ -1,43 +1,47 @@
-version: "3.9"
+version: "3.9" # docker compose versie
 
 services:
+  # postgres db
   postgres:
     image: postgres:16
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
-    ports: ["5432:5432"]
+    ports: ["5432:5432"] # db bereikbaar op 5432
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
+      - pgdata:/var/lib/postgresql/data # data blijft bewaard
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro # init scriptje
+    healthcheck: # check of db klaar is
       test: ["CMD-SHELL", "pg_isready -U admin"]
       interval: 5s
       timeout: 3s
       retries: 20
 
+  # mongo db
   mongo:
     image: mongo:7
-    ports: ["27017:27017"]
+    ports: ["27017:27017"] # mongo bereikbaar op 27017
     volumes:
-      - mongodata:/data/db
-    healthcheck:
+      - mongodata:/data/db # data blijft bewaard
+    healthcheck: # check of mongo klaar is
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 3s
       retries: 20
 
+  # users microservice
   users-service:
-    build: ./users-service
+    build: ./users-service # bouw image lokaal
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/usersdb
       - SPRING_DATASOURCE_USERNAME=users
       - SPRING_DATASOURCE_PASSWORD=users
-    depends_on:
+    depends_on: # start pas als postgres klaar is
       postgres:
         condition: service_healthy
 
+  # progress microservice
   progress-service:
     build: ./progress-service
     environment:
@@ -49,27 +53,29 @@ services:
       postgres:
         condition: service_healthy
 
+  # workouts microservice
   workouts-service:
     build: ./workouts-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/fittrackr
-    depends_on:
+    depends_on: # wacht tot mongo ok is
       mongo:
         condition: service_healthy
 
+  # gateway service
   gateway:
     build: ./gateway
-    ports: ["8080:8080"]
+    ports: ["8080:8080"] # api gateway bereikbaar op 8080
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false   # ← voeg deze lijn toe
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false # nodig voor spring cloud
     depends_on:
       - users-service
       - workouts-service
       - progress-service
 
-
+# volumes voor data (blijven bestaan)
 volumes:
   pgdata:
   mongodata:

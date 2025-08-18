@@ -28,11 +28,11 @@ public class WorkoutService {
 
     List<Workout> out = new ArrayList<>();
     for (Workout w : all) {
-      // user filter (optioneel)
+      // user filter
       if (userId != null) {
         if (w.getUserId() == null || !userId.equals(w.getUserId())) continue;
       }
-      // daterange filter (optioneel, enkel als beide aanwezig)
+      // daterange filter
       if (from != null && to != null) {
         Instant d = w.getDate();
         if (d == null) continue;
