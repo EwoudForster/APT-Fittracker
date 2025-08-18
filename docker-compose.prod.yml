@@ -1,0 +1,102 @@
+version: "3.9"
+
+services:
+  # Databases
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Microservices (van DockerHub)
+  users-service:
+    image: ${DOCKERHUB_USERNAME}/apt-fittracker-users-service:${IMAGE_TAG:-latest}
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/usersdb
+      SPRING_DATASOURCE_USERNAME: users
+      SPRING_DATASOURCE_PASSWORD: users
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  progress-service:
+    image: ${DOCKERHUB_USERNAME}/apt-fittracker-progress-service:${IMAGE_TAG:-latest}
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/progressdb
+      SPRING_DATASOURCE_USERNAME: progress
+      SPRING_DATASOURCE_PASSWORD: progress
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  workouts-service:
+    image: ${DOCKERHUB_USERNAME}/apt-fittracker-workouts-service:${IMAGE_TAG:-latest}
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/fittrackr
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # API Gateway
+  gateway:
+    image: ${DOCKERHUB_USERNAME}/apt-fittracker-gateway:${IMAGE_TAG:-latest}
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED: "false"
+      GOOGLE_CLIENT_ID: ${OAUTH_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
+    depends_on:
+      - users-service
+      - workouts-service
+      - progress-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`fittrackr.ewoud.be`)"
+      - "traefik.http.routers.gateway.entrypoints=websecure"
+      - "traefik.http.routers.gateway.tls.certresolver=letsencrypt"
+
+  # Traefik Reverse Proxy (HTTPS)
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.address=:80"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "letsencrypt:/letsencrypt"
+
+# Volumes
+volumes:
+  pgdata:
+  mongodata:
+  letsencrypt:

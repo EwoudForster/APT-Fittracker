@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- Gebruik Spring Boot als parent voor dependency management -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.4.4</version>
+    <relativePath/>
+  </parent>
+
+  <!-- Project coördinaten -->
+  <groupId>com.fittracker</groupId>
+  <artifactId>gateway</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+
+  <!-- Properties: Java versie, Spring Cloud versie, Surefire plugin versie -->
+  <properties>
+    <java.version>21</java.version>
+    <spring-cloud.version>2024.0.2</spring-cloud.version>
+    <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
+  </properties>
+
+  <!-- Spring Cloud BOM voor consistente versies -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Spring Cloud Gateway (WebFlux-based) -->
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-gateway</artifactId>
+    </dependency>
+
+    <!-- Spring Boot Actuator (metrics/health endpoints) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- Bean Validation (Jakarta Validation API) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- Test dependencies (inclusief JUnit 5, Mockito, enz.) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- WireMock 3: standalone JAR voor API-stubs in tests -->
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>3.6.0</version>
+      <scope>test</scope>
+    </dependency>
+  <!-- OAuth2 login (client) -->
+      <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-oauth2-client</artifactId>
+  </dependency>
+
+  <!-- Resource server (JWT bearer op API) -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+  </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Spring Boot Maven plugin: zorgt voor jar/bootJar builds en run -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+
+      <!-- Surefire plugin: test runner -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven.surefire.plugin.version}</version>
+        <!-- Extra configuratie: voorkomt waarschuwingen met Mockito agent -->
+        <configuration>
+          <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

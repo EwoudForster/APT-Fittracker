@@ -1,0 +1,79 @@
+version: "3.9" # Gebruik Docker Compose v3.9 syntax
+
+services:
+  postgres:
+    image: postgres:16 # Postgres database, versie 16
+    environment:
+      POSTGRES_USER: admin # Admin user voor Postgres
+      POSTGRES_PASSWORD: admin # Wachtwoord voor admin
+    ports: ["5432:5432"] # Expose naar host voor lokaal testen
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Persistente opslag
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro # Init script laden bij eerste start
+    healthcheck: # Check of Postgres klaar is
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7 # MongoDB versie 7
+    ports: ["27017:27017"] # Expose naar host
+    volumes:
+      - mongodata:/data/db # Persistente opslag
+    healthcheck: # Check of Mongo klaar is
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  users-service:
+    build: ./users-service # Build de users microservice uit Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker # Activeer docker profiel
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/usersdb # Connectie naar usersdb
+      SPRING_DATASOURCE_USERNAME: users # DB user
+      SPRING_DATASOURCE_PASSWORD: users # DB pass
+    depends_on: # Start pas als postgres healthy is
+      postgres:
+        condition: service_healthy
+
+  progress-service:
+    build: ./progress-service # Build de progress microservice
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/progressdb # Connectie naar progressdb
+      SPRING_DATASOURCE_USERNAME: progress
+      SPRING_DATASOURCE_PASSWORD: progress
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  workouts-service:
+    build: ./workouts-service # Build de workouts microservice
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/fittrackr # Connectie naar MongoDB
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+
+
+
+  gateway:
+    build: ./gateway # API Gateway
+    ports: ["8080:8080"] # Expose gateway naar host
+    environment:
+      GOOGLE_CLIENT_ID: ${OAUTH_CLIENT_ID} # Google OAuth client ID
+      GOOGLE_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET} # Google OAuth secret
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED: "false" # Verifier uitzetten (anders errors met Spring Cloud)
+    depends_on: # Start pas als de andere services draaien
+      - users-service
+      - workouts-service
+      - progress-service
+
+volumes:
+  pgdata: # Volume voor Postgres
+  mongodata: # Volume voor Mongo

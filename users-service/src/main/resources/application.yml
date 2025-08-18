@@ -1,0 +1,27 @@
+server:
+  port: 8081   # Deze service draait op poort 8081
+
+spring:
+  application:
+    name: users-service   # Naam van de applicatie, handig voor discovery/logging
+
+  datasource:
+    # Database connectie-instellingen (Postgres)
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/usersdb}  
+    # → eerst kijken naar omgevingsvariabele, anders fallback naar localhost
+    username: ${SPRING_DATASOURCE_USERNAME:users}  # standaard gebruiker
+    password: ${SPRING_DATASOURCE_PASSWORD:users}  # standaard wachtwoord
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # Hibernate maakt/updatet automatisch de tabellen
+    properties:
+      hibernate.jdbc.lob.non_contextual_creation: true  
+      # Zorgt dat PostgreSQL geen problemen heeft met grote objecten (LOBs)
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,mappings  
+        # Zorgt dat actuator endpoints beschikbaar zijn voor monitoring

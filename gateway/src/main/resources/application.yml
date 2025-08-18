@@ -1,0 +1,62 @@
+server:
+  port: 8080   # Gateway draait op poort 8080
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
+
+      resourceserver:
+        jwt:
+          issuer-uri: https://accounts.google.com
+  application:
+    name: gateway   # Naam van de Spring Boot app
+
+  cloud:
+    gateway:
+      # Default filter: zorgt dat dubbele CORS headers worden verwijderd
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+      # Globale CORS-configuratie voor alle routes
+      globalcors:
+        corsConfigurations:
+          '[/**]':         # Geldig voor alle endpoints
+            allowedOrigins:
+              - "http://localhost:4200"   # Angular dev-server
+              - "http://localhost:5173"   # Vite (bv. React dev-server)
+            allowedMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]  # Toegestane HTTP-methodes
+            allowedHeaders: ["*"]        # Alle headers toegestaan
+            allowCredentials: true       # Cookies / Authorization headers toegestaan
+
+      # Routering naar interne services
+      routes:
+        - id: users
+          uri: http://users-service:8081   # Docker service: users-service
+          predicates:
+            - Path=/api/users/**           # Matcht alle /api/users/** requests
+          filters:
+            - StripPrefix=1                # Verwijdert /api prefix bij doorsturen
+
+        - id: workouts
+          uri: http://workouts-service:8082  # Docker service: workouts-service
+          predicates:
+            - Path=/api/workouts/**
+          filters:
+            - StripPrefix=1
+
+        - id: progress
+          uri: http://progress-service:8083  # Docker service: progress-service
+          predicates:
+            - Path=/api/progress/**
+          filters:
+            - StripPrefix=1
