@@ -1,0 +1,21 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: users-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/usersdb}
+    username: ${SPRING_DATASOURCE_USERNAME:users}
+    password: ${SPRING_DATASOURCE_PASSWORD:users}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate.jdbc.lob.non_contextual_creation: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,mappings
