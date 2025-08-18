@@ -1,0 +1,5 @@
+com\fittracker\users\UserController.class
+com\fittracker\users\UsersServiceApplication.class
+com\fittracker\users\User.class
+com\fittracker\users\UserRepository.class
+com\fittracker\users\UserService.class

@@ -1,0 +1,6 @@
+com\fittracker\workouts\Workout$Exercise.class
+com\fittracker\workouts\WorkoutRepo.class
+com\fittracker\workouts\WorkoutsServiceApplication.class
+com\fittracker\workouts\WorkoutService.class
+com\fittracker\workouts\WorkoutController.class
+com\fittracker\workouts\Workout.class
