@@ -22,7 +22,7 @@ Test through the Gateway (port 8080):
   ```json
   {"email":"you@example.com", "displayName":"You"}
   ```
-
+d
 ### Local (without Docker)
 Build each module:
 ```bash
