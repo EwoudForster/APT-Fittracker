@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  users-service:
+    build: ./users-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/usersdb
+      - SPRING_DATASOURCE_USERNAME=users
+      - SPRING_DATASOURCE_PASSWORD=users
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  progress-service:
+    build: ./progress-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/progressdb
+      - SPRING_DATASOURCE_USERNAME=progress
+      - SPRING_DATASOURCE_PASSWORD=progress
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  workouts-service:
+    build: ./workouts-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/fittrackr
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  gateway:
+    build: ./gateway
+    ports: ["8080:8080"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false   # ← voeg deze lijn toe
+    depends_on:
+      - users-service
+      - workouts-service
+      - progress-service
+
+
+volumes:
+  pgdata:
+  mongodata:
