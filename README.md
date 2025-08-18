@@ -1,6 +1,3 @@
-Begrepen. Hier is een strakke **README in markdown** zonder icoontjes of icoontjes-achtige symbolen. Je kunt dit rechtstreeks in je repo plakken:
-
-````markdown
 # FitnessTracker Microservices Project
 
 ## Overzicht
@@ -257,7 +254,60 @@ volumes:
 * Screenshots van testresultaten kunnen hier toegevoegd worden.
 
 
+## Authenticatie (Google OAuth2 + Postman testen)
+
+Onze gateway gebruikt **Google OAuth2** voor authenticatie.  
+Dit werkt op 2 manieren:
+
+### 1. Browsergebruik (frontend)
+- Ga naar `http://localhost:8080`  
+- Je wordt automatisch doorgestuurd naar **Google login**  
+- Na login bewaart de gateway je sessie en kan je de API via de frontend gebruiken
+
+### 2. API-gebruik (Postman / andere clients)
+Omdat de API een **JWT (Google ID token)** verwacht, moet je dit zelf meesturen:
+
+1. Haal een Google **ID token** op:
+   - Via de frontend: log in en kopieer het `id_token` uit de OAuth-respons.
+   - Of via [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/):
+     - Vul je eigen **client-id** en **client-secret** in (zie `docker-compose.yml`).
+     - Selecteer de scopes: `openid profile email`.
+     - Autoriseer en wissel de code in voor tokens.
+     - Kopieer het `ID token`.
+
+2. Voeg dit toe aan je request in Postman:
+   - **Header**:
+     ```
+     Authorization: Bearer <ID_TOKEN>
+     ```
+   - Optioneel: 
+     ```
+     Accept: application/json
+     ```
+
+3. Test:
+   - Zonder token → je krijgt **401 Unauthorized** (correct gedrag).
+   - Met geldig token → je krijgt de JSON-respons van de API, bv.  
+     ```
+     GET http://localhost:8080/api/users
+     ```
+
+### Unauthorized verzoek
+
+![alt text](images/unauthorized.png)
+
+### Inloggen Google
+
+![alt text](images/login.png)
+
+### Securitytoken Weergegeven in frontend
+
+![alt text](images/sessiontoken.png)
+
 ## CI/CD
+* GitHub Actions builden automatisch alle microservices.
+* Docker images worden gepubliceerd naar Docker Hub.
+* `docker-compose.yml` trekt steeds de laatste images.
 
 * GitHub Actions builden automatisch alle microservices.
 * Docker images worden gepubliceerd naar Docker Hub.
