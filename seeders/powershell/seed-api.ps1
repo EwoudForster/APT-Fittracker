@@ -1,18 +1,20 @@
 param(
-  [string]$Gateway = "http://localhost:8080",
-  [int]$DaysBack = 7,                # aantal dagen terug om workouts te maken (0 = alleen vandaag)
+  [string]$Gateway = "http://localhost:8080",   # Gateway endpoint (API toegang)
+  [int]$DaysBack = 7,                # aantal dagen terug om workouts te maken (0 = enkel vandaag)
   [int]$TargetIncrements = 6,        # progress → exact naar dit aantal increments per user
-  [int]$PauseMs = 0,                 # throttle tussen requests
-  [switch]$OnlyUsers,
-  [switch]$OnlyWorkouts,
-  [switch]$OnlyProgress,
-  [switch]$DryRun                    # geen calls, alleen tonen wat zou gebeuren
+  [int]$PauseMs = 0,                 # throttle (pauze in ms tussen requests)
+  [switch]$OnlyUsers,                # enkel users seeden
+  [switch]$OnlyWorkouts,             # enkel workouts seeden
+  [switch]$OnlyProgress,             # enkel progress seeden
+  [switch]$DryRun                    # geen calls uitvoeren, alleen tonen wat er zou gebeuren
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"  # Stop script bij fouten
 
+# wachten als er een pause ingesteld is
 function Sleep-IfNeeded() { if ($PauseMs -gt 0) { Start-Sleep -Milliseconds $PauseMs } }
 
+#  HTTP-call opnieuw proberen bij fouten
 function Invoke-WithRetry {
   param([scriptblock]$Action, [int]$Retries = 3, [int]$DelayMs = 400)
   $last = $null
@@ -22,12 +24,16 @@ function Invoke-WithRetry {
   if ($last) { throw $last } else { throw "Unknown error after $Retries retries" }
 }
 
+# JSON-requests sturen (met DryRun optie)
 function Invoke-Json {
   param(
     [string]$Method, [string]$Url, $Body = $null,
     [string]$ContentType = "application/json"
   )
-  if ($DryRun) { Write-Host "DRYRUN $Method $Url`n$($Body | ConvertTo-Json -Depth 8)" -ForegroundColor Yellow; return $null }
+  if ($DryRun) { 
+    Write-Host "DRYRUN $Method $Url`n$($Body | ConvertTo-Json -Depth 8)" -ForegroundColor Yellow
+    return $null 
+  }
   Invoke-WithRetry { 
     if ($Body -ne $null) {
       $json = $Body | ConvertTo-Json -Depth 10
@@ -38,13 +44,15 @@ function Invoke-Json {
   }
 }
 
+# Check of de gateway API online is
 function Check-Health {
   Write-Host "Checking health..." -ForegroundColor Cyan
   $res = Invoke-WithRetry { Invoke-RestMethod -Uri "$Gateway/actuator/health" -Method GET }
   $res
 }
 
-# ---------- Data ----------
+
+# Test-users (mock data met best lifts)
 $Users = @(
   @{ id="11111111-1111-1111-1111-111111111111"; email="alice@example.com"; displayName="Alice";   best=@{bench=85; squat=120; deadlift=150} },
   @{ id="22222222-2222-2222-2222-222222222222"; email="bob@example.com";   displayName="Bob";     best=@{bench=95; squat=140; deadlift=180} },
@@ -54,7 +62,7 @@ $Users = @(
   @{ id="66666666-6666-6666-6666-666666666666"; email="frank@example.com"; displayName="Frank";   best=@{bench=80;  squat=110; deadlift=145} }
 )
 
-# Workout templates per dag (simpele basis)
+# Workout-templates (roteren per dag)
 $Templates = @{
   "Upper" = @(
     @{ name="Bench Press";      sets=3; reps=10; weight=40.0 },
@@ -75,14 +83,15 @@ $Templates = @{
   )
 }
 
-# Roteer templates per dag
+# Helper om juiste template te kiezen afhankelijk van dag
 function Get-TemplateForDay([int]$offset) {
   $keys = @("Upper","Lower","Pull","Push")
   $idx = ($offset % $keys.Count)
   $Templates[$keys[$idx]]
 }
 
-# ---------- Seeder helpers ----------
+
+# Users in database zetten (of updaten als ze bestaan)
 function Upsert-Users {
   $endpoint = "$Gateway/api/users"
   foreach ($u in $Users) {
@@ -96,6 +105,7 @@ function Upsert-Users {
   }
 }
 
+# Workouts genereren per user en per dag
 function Create-Workouts {
   $endpoint = "$Gateway/api/workouts"
   $today = Get-Date
@@ -117,6 +127,7 @@ function Create-Workouts {
   }
 }
 
+# Progress records ophalen (of aanmaken)
 function Ensure-Progress-Record([string]$userId) {
   $url = "$Gateway/api/progress?userId=$userId"
   try {
@@ -127,7 +138,7 @@ function Ensure-Progress-Record([string]$userId) {
   }
 }
 
-
+# Progress increments doorduwen tot target bereikt is
 function Ensure-Progress-Increments([string]$userId, [int]$target) {
   $p = Ensure-Progress-Record $userId
   if (-not $p) { return }
@@ -150,10 +161,10 @@ function Ensure-Progress-Increments([string]$userId, [int]$target) {
   Write-Host "Progress ensured to $($p2.workoutsCompleted) for $userId" -ForegroundColor DarkCyan
 }
 
+# Best lifts updaten voor elke user
 function Upsert-BestLifts([string]$userId, $bestObj, [int]$workoutsCompleted) {
   $endpoint = "$Gateway/api/progress"
-  # JSON-string (geen -Compress nodig)
-  $bestJson = ($bestObj | ConvertTo-Json -Depth 10)
+  $bestJson = ($bestObj | ConvertTo-Json -Depth 10)  # liften als JSON string
   try {
     $resp = Invoke-Json -Method "PUT" -Url $endpoint -Body @{
       userId = $userId
@@ -166,10 +177,10 @@ function Upsert-BestLifts([string]$userId, $bestObj, [int]$workoutsCompleted) {
   }
 }
 
-
+# Samenvatting tonen na run
 function Summary {
   Write-Host ""
-  Write-Host "=== SUMMARY (progress per user) ===" -ForegroundColor Cyan
+  Write-Host "SUMMARY (progress per user)" -ForegroundColor Cyan
   foreach ($u in $Users) {
     $p = $null
     try { $p = Invoke-RestMethod -Uri "$Gateway/api/progress?userId=$($u.id)" -Method GET } catch {}
@@ -182,26 +193,29 @@ function Summary {
   }
 }
 
-# ---------- RUN ----------
+
+# Eerst checken of de gateway werkt
 $hc = Check-Health
 if (-not $hc -or $hc.status -ne "UP") { throw "Gateway health not UP: $($hc | ConvertTo-Json -Depth 6)" }
 
+# Users aanmaken tenzij we enkel workouts/progress draaien
 if (-not $OnlyWorkouts -and -not $OnlyProgress) {
   Upsert-Users
 }
 
+# Workouts aanmaken tenzij we enkel users/progress draaien
 if (-not $OnlyUsers -and -not $OnlyProgress) {
   Create-Workouts
 }
 
+# Progress bijwerken tenzij we enkel users/workouts draaien
 if (-not $OnlyUsers -and -not $OnlyWorkouts) {
   foreach ($u in $Users) {
-    # 1) Zorg dat record bestaat & increment exact naar target
     Ensure-Progress-Increments -userId $u.id -target $TargetIncrements
-    # 2) Best lifts upsert met het (target) workoutsCompleted
     Upsert-BestLifts -userId $u.id -bestObj $u.best -workoutsCompleted $TargetIncrements
   }
 }
 
+# Overzicht printen
 Summary
 Write-Host "`nDONE." -ForegroundColor Green

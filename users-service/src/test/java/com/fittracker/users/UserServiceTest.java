@@ -50,6 +50,7 @@ class UserServiceTest {
 
     var res = service.list(null);
 
+    // als er geen email filter is → alles ophalen
     assertEquals(2, res.size());
     verify(repo).findAll();
     verify(repo, never()).findByEmail(anyString());
@@ -61,6 +62,7 @@ class UserServiceTest {
 
     var res = service.list("alice@example.com");
 
+    // als email gevonden wordt → lijst met 1 element
     assertEquals(1, res.size());
     assertEquals(u1, res.get(0));
     verify(repo).findByEmail("alice@example.com");
@@ -73,6 +75,7 @@ class UserServiceTest {
 
     var res = service.list("nobody@example.com");
 
+    // als email niet bestaat → lege lijst
     assertTrue(res.isEmpty());
     verify(repo).findByEmail("nobody@example.com");
     verify(repo, never()).findAll();
@@ -84,6 +87,7 @@ class UserServiceTest {
 
     var res = service.get(id1);
 
+    // user bestaat gewoon
     assertSame(u1, res);
     verify(repo).findById(id1);
   }
@@ -92,6 +96,7 @@ class UserServiceTest {
   void get_throws_whenNotFound() {
     when(repo.findById(id1)).thenReturn(Optional.empty());
 
+    // als niet gevonden → exception
     assertThrows(NoSuchElementException.class, () -> service.get(id1));
     verify(repo).findById(id1);
   }
@@ -106,6 +111,7 @@ class UserServiceTest {
 
     var res = service.create(newUser);
 
+    // create slaat gewoon op en geeft terug
     assertSame(newUser, res);
     verify(repo).save(newUser);
   }
@@ -121,6 +127,7 @@ class UserServiceTest {
 
     var updated = service.update(id1, patch);
 
+    // beide velden overschreven
     assertEquals("alice+patched@example.com", updated.getEmail());
     assertEquals("Alice Patched", updated.getDisplayName());
 
@@ -138,10 +145,11 @@ class UserServiceTest {
 
     var oldEmail = u1.getEmail();
     var patch = new User();
-    patch.setDisplayName("Alice NEW"); // email blijft null → niet overschrijven
+    patch.setDisplayName("Alice NEW"); // email niet meegegeven
 
     var updated = service.update(id1, patch);
 
+    // email blijft hetzelfde, displayName aangepast
     assertEquals(oldEmail, updated.getEmail());
     assertEquals("Alice NEW", updated.getDisplayName());
   }
@@ -152,6 +160,7 @@ class UserServiceTest {
 
     service.delete(id1);
 
+    // delete gewoon doorgeven aan repo
     verify(repo).deleteById(id1);
   }
 }

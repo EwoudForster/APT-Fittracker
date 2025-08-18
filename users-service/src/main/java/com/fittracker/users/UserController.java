@@ -14,25 +14,42 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/users")  // Alle endpoints beginnen met /users
 public class UserController {
   private final UserService svc;
-  public UserController(UserService svc){ this.svc = svc; }
 
+  // zo wordt de service binnengehaald
+  public UserController(UserService svc){ 
+    this.svc = svc; 
+  }
+
+  // users ophalen, kan met email filter
   @GetMapping
   public List<User> list(@RequestParam(required=false) String email){
     return svc.list(email);
   }
 
+  // user ophalen op basis van UUID
   @GetMapping("/{id}")
-  public User get(@PathVariable UUID id){ return svc.get(id); }
+  public User get(@PathVariable UUID id){ 
+    return svc.get(id); 
+  }
 
+  // nieuwe user aanmaken
   @PostMapping
-  public User create(@RequestBody @Valid User u){ return svc.create(u); }
+  public User create(@RequestBody @Valid User u){ 
+    return svc.create(u); 
+  }
 
+  // bestaande user bijwerken
   @PutMapping("/{id}")
-  public User update(@PathVariable UUID id, @RequestBody User u){ return svc.update(id, u); }
+  public User update(@PathVariable UUID id, @RequestBody User u){ 
+    return svc.update(id, u); 
+  }
 
+  // user verwijderen
   @DeleteMapping("/{id}")
-  public void delete(@PathVariable UUID id){ svc.delete(id); }
+  public void delete(@PathVariable UUID id){ 
+    svc.delete(id); 
+  }
 }

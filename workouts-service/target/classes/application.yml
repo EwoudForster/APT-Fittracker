@@ -1,15 +1,19 @@
 server:
-  port: 8082
+  port: 8082   # Deze service draait op poort 8082 (zodat hij niet botst met andere services)
 
 spring:
   application:
-    name: workouts-service
+    name: workouts-service   # Naam van de service, handig voor logging en discovery
   data:
     mongodb:
+      # URI van MongoDB. 
+      # Standaard pakt hij localhost:27017/fittrackr als er geen SPRING_DATA_MONGODB_URI is ingesteld.
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/fittrackr}
 
 management:
   endpoints:
     web:
+      # Welke actuator endpoints publiek beschikbaar zijn.
+      # health = status van de app, info = app info, mappings = alle REST endpoints.
       exposure:
         include: health,info,mappings

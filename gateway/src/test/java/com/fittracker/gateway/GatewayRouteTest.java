@@ -15,6 +15,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GatewayRouteTest {
 
+  // WireMock als fake backend waar gateway naar doorstuurt
   static WireMockServer backend = new WireMockServer(options().dynamicPort());
 
   @BeforeAll
@@ -25,7 +26,8 @@ class GatewayRouteTest {
 
   @DynamicPropertySource
   static void gatewayProps(DynamicPropertyRegistry reg) {
-    // users
+    // Dynamisch de routes configureren zodat gateway → WireMock gaat
+    // usres
     reg.add("spring.cloud.gateway.routes[0].id", () -> "users");
     reg.add("spring.cloud.gateway.routes[0].uri", () -> "http://localhost:" + backend.port());
     reg.add("spring.cloud.gateway.routes[0].predicates[0]", () -> "Path=/api/users/**");
@@ -43,7 +45,7 @@ class GatewayRouteTest {
     reg.add("spring.cloud.gateway.routes[2].predicates[0]", () -> "Path=/api/progress/**");
     reg.add("spring.cloud.gateway.routes[2].filters[0]", () -> "StripPrefix=1");
 
-    // CORS
+    // CORS configuratie
     reg.add("spring.cloud.gateway.globalcors.corsConfigurations.[/**].allowedOrigins[0]", () -> "http://localhost:4200");
     reg.add("spring.cloud.gateway.globalcors.corsConfigurations.[/**].allowedMethods[0]", () -> "GET");
     reg.add("spring.cloud.gateway.globalcors.corsConfigurations.[/**].allowedMethods[1]", () -> "POST");
@@ -53,16 +55,19 @@ class GatewayRouteTest {
     reg.add("spring.cloud.gateway.default-filters[0]", () -> "DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin");
   }
 
+  // Test client die tegen de echte gateway (random port) schiet
   @Autowired WebTestClient webClient;
   @LocalServerPort int port;
 
   @Test
   void forwardsUsersGet_withStripPrefix() {
+    // Backend stub: verwacht GET /users/ping
     backend.stubFor(get(urlEqualTo("/users/ping"))
         .willReturn(aResponse()
             .withHeader("Content-Type", "application/json")
             .withBody("{\"ok\":true}")));
 
+    // Gateway call: client vraagt /api/users/ping
     webClient.get()
         .uri("http://localhost:" + port + "/api/users/ping")
         .exchange()
@@ -70,11 +75,13 @@ class GatewayRouteTest {
         .expectHeader().contentType("application/json")
         .expectBody().json("{\"ok\":true}");
 
+    // Verifieer dat gateway correct heeft doorgestuurd naar backend
     backend.verify(getRequestedFor(urlEqualTo("/users/ping")));
   }
 
   @Test
   void forwardsWorkoutsPost_andPreservesStatus() {
+    // Backend stub: POST /workouts met body {"userId":"u1"} → 201 + JSON response
     backend.stubFor(post(urlEqualTo("/workouts"))
         .withRequestBody(equalToJson("{\"userId\":\"u1\"}", true, true))
         .willReturn(aResponse()
@@ -82,6 +89,7 @@ class GatewayRouteTest {
             .withHeader("Content-Type", "application/json")
             .withBody("{\"id\":\"w1\"}")));
 
+    // Gateway call: /api/workouts met dezelfde body
     webClient.post()
         .uri("http://localhost:" + port + "/api/workouts")
         .header("Content-Type", "application/json")
@@ -90,16 +98,19 @@ class GatewayRouteTest {
         .expectStatus().isCreated()
         .expectBody().json("{\"id\":\"w1\"}");
 
+    // Check dat backend de juiste call ontving
     backend.verify(postRequestedFor(urlEqualTo("/workouts")));
   }
 
   @Test
   void forwardsProgressPut() {
+    // Backend stub: PUT /progress/111/increment → JSON terug
     backend.stubFor(put(urlEqualTo("/progress/111/increment"))
         .willReturn(aResponse()
             .withHeader("Content-Type", "application/json")
             .withBody("{\"ok\":true}")));
 
+    // Gateway call: /api/progress/111/increment
     webClient.put()
         .uri("http://localhost:" + port + "/api/progress/111/increment")
         .exchange()
@@ -111,6 +122,7 @@ class GatewayRouteTest {
 
   @Test
   void corsPreflightIsAllowed() {
+    // Test preflight OPTIONS-request → moet 200 + juiste headers teruggeven
     webClient.options()
         .uri("http://localhost:" + port + "/api/workouts")
         .header("Origin", "http://localhost:4200")

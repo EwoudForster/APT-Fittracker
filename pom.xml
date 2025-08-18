@@ -2,16 +2,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <!-- Basisversie van Maven POM -->
   <modelVersion>4.0.0</modelVersion>
 
+  <!-- Groep + artifact + versie definiëren de coördinaten van dit project -->
   <groupId>com.fittracker</groupId>
   <artifactId>fittracker-parent</artifactId>
   <version>1.0.0</version>
+  <!-- Dit project is een parent POM en geen gewone applicatie -->
   <packaging>pom</packaging>
 
   <name>fittracker-parent</name>
   <description>Aggregator POM to run tests for all modules</description>
 
+  <!-- Hier geef ik aan welke submodules (services) tot dit project behoren -->
   <modules>
     <module>users-service</module>
     <module>workouts-service</module>
@@ -19,20 +24,22 @@
     <module>gateway</module>
   </modules>
 
+  <!-- Properties: herbruikbare variabelen -->
   <properties>
-    <java.version>21</java.version>
-    <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
+    <java.version>21</java.version><!-- Ik gebruik Java 21 in dit project -->
+    <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version> <!-- Versie van test-runner plugin -->
   </properties>
 
   <build>
     <pluginManagement>
       <plugins>
+        <!-- Surefire plugin: hiermee draait Maven de unit tests -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven.surefire.plugin.version}</version>
-          <!-- Optioneel: schakel ByteBuddy-waarschuwing uit -->
           <configuration>
+            <!-- Nodig om Mockito goed te laten werken in nieuwere JDK's -->
             <argLine>-XX:+EnableDynamicAgentLoading</argLine>
           </configuration>
         </plugin>

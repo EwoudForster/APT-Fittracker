@@ -47,6 +47,7 @@ class ProgressServiceTest {
 
     var res = service.getAll();
 
+    // checkt dat de lijst gewoon terugkomt uit de repo
     assertSame(list, res);
     verify(progressRepository).findAll();
   }
@@ -57,6 +58,7 @@ class ProgressServiceTest {
 
     var res = service.getByUser(u1);
 
+    // bestaand record komt gewoon terug, zonder save
     assertSame(existing, res);
     verify(progressRepository).findByUserId(u1);
     verify(progressRepository, never()).save(any());
@@ -69,6 +71,7 @@ class ProgressServiceTest {
 
     var res = service.getByUser(u1);
 
+    // nieuw record met defaults
     assertEquals(u1, res.getUserId());
     assertEquals(0, res.getWorkoutsCompleted());
     assertNotNull(res.getUpdatedAt());
@@ -86,6 +89,7 @@ class ProgressServiceTest {
 
     var res = service.incrementWorkouts(u1);
 
+    // bestaande waarde (3) gaat naar 4
     assertEquals(4, res.getWorkoutsCompleted());
 
     ArgumentCaptor<Progress> cap = ArgumentCaptor.forClass(Progress.class);
@@ -96,8 +100,7 @@ class ProgressServiceTest {
 
   @Test
   void incrementWorkouts_createsThenIncrementsWhenMissing_twoCallsTwoSaves() {
-    // 1e call: niets in DB
-    // 2e call: record bestaat met waarde 1
+    // eerste keer niets in de repo, tweede keer staat er eentje met waarde 1
     Progress afterFirst = new Progress(UUID.randomUUID(), u1, 1, "{}", Instant.now());
 
     when(progressRepository.findByUserId(u1))
@@ -108,7 +111,7 @@ class ProgressServiceTest {
     var p1 = service.incrementWorkouts(u1);
     assertEquals(1, p1.getWorkoutsCompleted());
 
-    // tweede increment: maakt 2
+    // tweede increment: verhoogt naar 2
     var p2 = service.incrementWorkouts(u1);
     assertEquals(2, p2.getWorkoutsCompleted());
 
@@ -122,13 +125,14 @@ class ProgressServiceTest {
   @Test
   void upsert_createsWhenAbsent_defaultsFilled() {
     Progress body = new Progress();
-    body.setUserId(u1);                 // geen id, geen bestLifts, geen updatedAt, workoutsCompleted blijft default 0
+    body.setUserId(u1); // enkel userId meegegeven, rest blijft default
 
     when(progressRepository.findByUserId(u1)).thenReturn(Optional.empty());
     when(progressRepository.save(any(Progress.class))).thenAnswer(inv -> inv.getArgument(0));
 
     var res = service.upsert(body);
 
+    // defaults worden gezet
     assertEquals(u1, res.getUserId());
     assertEquals(0, res.getWorkoutsCompleted());
     assertEquals("{}", res.getBestLifts());
@@ -136,7 +140,7 @@ class ProgressServiceTest {
 
     ArgumentCaptor<Progress> cap = ArgumentCaptor.forClass(Progress.class);
     verify(progressRepository).save(cap.capture());
-    assertNull(cap.getValue().getId(), "id moet door JPA/@PrePersist gezet worden");
+    assertNull(cap.getValue().getId(), "id moet door JPA gezet worden");
   }
 
   @Test
@@ -152,6 +156,7 @@ class ProgressServiceTest {
 
     var res = service.upsert(body);
 
+    // nieuwe waardes overschrijven de oude
     assertEquals(9, res.getWorkoutsCompleted());
     assertEquals("{\"bench\":100}", res.getBestLifts());
     assertNotNull(res.getUpdatedAt());
@@ -161,4 +166,6 @@ class ProgressServiceTest {
     assertEquals(9, cap.getValue().getWorkoutsCompleted());
     assertEquals("{\"bench\":100}", cap.getValue().getBestLifts());
   }
+
+  // hier kan nog een extra test bij: als userId null is, moet hij IllegalArgumentException gooien
 }

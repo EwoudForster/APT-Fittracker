@@ -10,16 +10,16 @@ import java.util.UUID;
 @RequestMapping("/progress")
 public class ProgressController {
 
+  // Service laag die alle businesslogica bevat
   private final ProgressService service;
 
+  // Constructor injection (aanbevolen manier in Spring)
   public ProgressController(ProgressService service) {
     this.service = service;
   }
 
-  /**
-   * GET /progress                   -> alle progress (lijst)
-   * GET /progress?userId=<uuid>     -> progress voor 1 user (object, auto-create)
-   */
+  // Als userId meegegeven wordt → enkel die progress teruggeven
+  // Anders → lijst van alle progress-records
   @GetMapping
   public ResponseEntity<?> get(
       @RequestParam(required = false) UUID userId
@@ -31,13 +31,14 @@ public class ProgressController {
     return ResponseEntity.ok(service.getByUser(userId));
   }
 
-  /** PUT /progress/{userId}/increment -> +1 workoutsCompleted */
+  // Verhoogt workoutsCompleted voor deze user met +1
   @PutMapping("/{userId}/increment")
   public ResponseEntity<Progress> increment(@PathVariable UUID userId) {
     return ResponseEntity.ok(service.incrementWorkouts(userId));
   }
 
-  /** PUT /progress (upsert) */
+  // Upsert → maakt nieuw record als het niet bestaat,
+  // update bestaand record als het er al is
   @PutMapping
   public ResponseEntity<Progress> upsert(@RequestBody Progress body) {
     return ResponseEntity.ok(service.upsert(body));
