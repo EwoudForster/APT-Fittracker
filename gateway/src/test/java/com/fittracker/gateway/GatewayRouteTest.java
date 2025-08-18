@@ -139,8 +139,10 @@ class GatewayRouteTest {
   @TestConfiguration
   static class NoSecurityConfig {
     @Bean
+    @org.springframework.core.annotation.Order(0) // zorg dat deze altijd vóór de main security chain komt
     SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
       return http
+          .securityMatcher(org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.anyExchange())
           .csrf(ServerHttpSecurity.CsrfSpec::disable)
           .authorizeExchange(ex -> ex.anyExchange().permitAll())
           .build();
