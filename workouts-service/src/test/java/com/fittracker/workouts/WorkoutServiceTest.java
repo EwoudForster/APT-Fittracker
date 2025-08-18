@@ -65,6 +65,7 @@ class WorkoutServiceTest {
 
     var res = service.list(null, null, null);
 
+    // geen filters → alles terug
     assertEquals(3, res.size());
     verify(repo).findAll();
   }
@@ -75,6 +76,7 @@ class WorkoutServiceTest {
 
     var res = service.list(u1, null, null);
 
+    // enkel workouts van die user
     assertEquals(2, res.size());
     assertTrue(res.stream().allMatch(w -> u1.equals(w.getUserId())));
   }
@@ -99,6 +101,7 @@ class WorkoutServiceTest {
 
     var res = service.get("A");
 
+    // gevonden workout teruggeven
     assertSame(w1_u1_now, res);
     verify(repo).findById("A");
   }
@@ -107,6 +110,7 @@ class WorkoutServiceTest {
   void get_throws_whenNotFound() {
     when(repo.findById("X")).thenReturn(Optional.empty());
 
+    // niet gevonden → exception
     assertThrows(NoSuchElementException.class, () -> service.get("X"));
     verify(repo).findById("X");
   }
@@ -122,10 +126,11 @@ class WorkoutServiceTest {
 
     var saved = service.create(incoming);
 
+    // id moet genulled zijn voor save
     ArgumentCaptor<Workout> captor = ArgumentCaptor.forClass(Workout.class);
     verify(repo).save(captor.capture());
     var passedToRepo = captor.getValue();
-    assertNull(passedToRepo.getId(), "Service must null the id before save()");
+    assertNull(passedToRepo.getId(), "Service moet id nullen");
     assertSame(saved, passedToRepo);
   }
 
@@ -140,12 +145,13 @@ class WorkoutServiceTest {
     when(repo.save(any(Workout.class))).thenAnswer(inv -> inv.getArgument(0));
 
     Workout patch = new Workout();
-    patch.setUserId(u2);          // verandert
-    patch.setDate(yesterday);     // verandert
+    patch.setUserId(u2);          // wordt overschreven
+    patch.setDate(yesterday);     // wordt overschreven
     patch.setExercises(null);     // blijft ongewijzigd
 
     var updated = service.update("A", patch);
 
+    // enkel non-null velden aangepast
     assertEquals(u2, updated.getUserId());
     assertEquals(yesterday, updated.getDate());
     verify(repo).save(updated);
@@ -154,6 +160,8 @@ class WorkoutServiceTest {
   @Test
   void delete_invokesRepository() {
     service.delete("X");
+
+    // delete gewoon doorgeven aan repo
     verify(repo).deleteById("X");
   }
 }

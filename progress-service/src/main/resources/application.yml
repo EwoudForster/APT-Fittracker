@@ -1,27 +1,28 @@
 server:
-  port: 8083
+  port: 8083   # Service draait op poort 8083 (zoals in gateway-config)
 
 spring:
   datasource:
-    # Compose override’t deze via env, maar de default is alvast goed voor docker:
+    # In docker-compose worden deze waarden meestal overschreven via env-variabelen.
+    # Hier staat de default (fallback) configuratie:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/progressdb}
     username: ${SPRING_DATASOURCE_USERNAME:progress}
     password: ${SPRING_DATASOURCE_PASSWORD:progress}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: org.postgresql.Driver   # Driver voor PostgreSQL
 
   jpa:
     hibernate:
-      ddl-auto: update
-    open-in-view: false
+      ddl-auto: update       # Schema automatisch updaten (handig voor dev)
+    open-in-view: false       # Lazy loading buiten transacties vermijden
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect  # Dialect voor PostgreSQL
 
   jackson:
     serialization:
-      write-dates-as-timestamps: false
+      write-dates-as-timestamps: false   # Gebruik ISO-8601 i.p.v. numerieke timestamps
 
 logging:
   level:
-    org.hibernate.SQL: warn
-    org.springframework: info
+    org.hibernate.SQL: warn          # SQL-statements niet spammen in logs
+    org.springframework: info        # Standaard info logging voor Spring

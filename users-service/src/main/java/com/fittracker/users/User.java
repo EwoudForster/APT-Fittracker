@@ -9,27 +9,30 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users")  // Map deze klasse naar de tabel 'users'
 public class User {
   @Id
-  private UUID id;
+  private UUID id;   // Primary key (UUID i.p.v. auto-increment)
 
   @Column(nullable=false, unique=true)
-  private String email;
+  private String email;   // Email moet verplicht én uniek zijn
 
   @Column(nullable=false)
-  private String displayName;
+  private String displayName;   // Naam die de gebruiker ziet
 
-  private Instant createdAt;
+  private Instant createdAt;   // Wanneer de user is aangemaakt
 
   @PrePersist
   public void prePersist() {
+    // Zorgt dat er automatisch een UUID en createdAt gezet wordt
     if (id == null) id = UUID.randomUUID();
     if (createdAt == null) createdAt = Instant.now();
   }
 
+  // Lege constructor verplicht voor JPA
   public User() {}
 
+  // Getters & Setters (standaard Java bean style)
   public UUID getId() { return id; }
   public void setId(UUID id) { this.id = id; }
   public String getEmail() { return email; }
