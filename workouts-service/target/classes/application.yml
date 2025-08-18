@@ -6,8 +6,7 @@ spring:
     name: workouts-service   # Naam van de service, handig voor logging en discovery
   data:
     mongodb:
-      # URI van MongoDB. 
-      # Standaard pakt hij localhost:27017/fittrackr als er geen SPRING_DATA_MONGODB_URI is ingesteld.
+      # URL van MongoDB. 
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/fittrackr}
 
 management:
