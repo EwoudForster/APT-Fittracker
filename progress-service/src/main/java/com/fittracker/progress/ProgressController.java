@@ -1,26 +1,45 @@
 package com.fittracker.progress;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/progress")
 public class ProgressController {
-  private final ProgressService svc;
-  public ProgressController(ProgressService svc){ this.svc = svc; }
 
+  private final ProgressService service;
+
+  public ProgressController(ProgressService service) {
+    this.service = service;
+  }
+
+  /**
+   * GET /progress                   -> alle progress (lijst)
+   * GET /progress?userId=<uuid>     -> progress voor 1 user (object, auto-create)
+   */
   @GetMapping
-  public Progress get(@RequestParam UUID userId){ return svc.getByUser(userId); }
+  public ResponseEntity<?> get(
+      @RequestParam(required = false) UUID userId
+  ) {
+    if (userId == null) {
+      List<Progress> all = service.getAll();
+      return ResponseEntity.ok(all);
+    }
+    return ResponseEntity.ok(service.getByUser(userId));
+  }
 
+  /** PUT /progress/{userId}/increment -> +1 workoutsCompleted */
   @PutMapping("/{userId}/increment")
-  public Progress inc(@PathVariable UUID userId){ return svc.incrementWorkouts(userId); }
+  public ResponseEntity<Progress> increment(@PathVariable UUID userId) {
+    return ResponseEntity.ok(service.incrementWorkouts(userId));
+  }
 
+  /** PUT /progress (upsert) */
   @PutMapping
-  public Progress save(@RequestBody Progress p){ return svc.save(p); }
+  public ResponseEntity<Progress> upsert(@RequestBody Progress body) {
+    return ResponseEntity.ok(service.upsert(body));
+  }
 }

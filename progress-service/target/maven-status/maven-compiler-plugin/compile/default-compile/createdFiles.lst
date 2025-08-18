@@ -1,0 +1,5 @@
+com\fittracker\progress\ProgressServiceApplication.class
+com\fittracker\progress\ProgressRepository.class
+com\fittracker\progress\Progress.class
+com\fittracker\progress\ProgressController.class
+com\fittracker\progress\ProgressService.class
