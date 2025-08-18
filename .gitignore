@@ -1,0 +1,27 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# OS / misc
+.DS_Store
+Thumbs.db
+
+# Node.js (indien je een frontend hebt)
+node_modules/
+dist/
