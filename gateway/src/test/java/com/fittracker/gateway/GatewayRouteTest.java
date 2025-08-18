@@ -4,10 +4,10 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.TestConfiguration;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -17,11 +17,16 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
+/**
+ * Integration test voor de Gateway routes met WireMock als backend.
+ * In deze test schakelen we security uit via een test-only SecurityWebFilterChain
+ * zodat we 401's vermijden en enkel de routing/functie testen.
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(GatewayRouteTest.NoSecurityConfig.class) // 👉 disable security in tests
+@Import(GatewayRouteTest.NoSecurityConfig.class)
 class GatewayRouteTest {
 
-  // WireMock als fake backend waar gateway naar doorstuurt
+  // WireMock als fake backend waar gateway naartoe doorstuurt
   static WireMockServer backend = new WireMockServer(options().dynamicPort());
 
   @BeforeAll
@@ -60,7 +65,6 @@ class GatewayRouteTest {
     reg.add("spring.cloud.gateway.default-filters[0]", () -> "DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin");
   }
 
-  // Test client die tegen de echte gateway (random port) schiet
   @Autowired WebTestClient webClient;
   @LocalServerPort int port;
 
@@ -128,12 +132,18 @@ class GatewayRouteTest {
         .expectHeader().valueEquals("Access-Control-Allow-Origin", "http://localhost:4200");
   }
 
-  // 👉 Extra config om security uit te zetten in tests
+  /**
+   * Test-only security override: alles toestaan.
+   * Dit voorkomt 401's tijdens integratietesten van de gateway routing.
+   */
   @TestConfiguration
   static class NoSecurityConfig {
     @Bean
     SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-      return http.csrf().disable().authorizeExchange().anyExchange().permitAll().build();
+      return http
+          .csrf(ServerHttpSecurity.CsrfSpec::disable)
+          .authorizeExchange(ex -> ex.anyExchange().permitAll())
+          .build();
     }
   }
 }
