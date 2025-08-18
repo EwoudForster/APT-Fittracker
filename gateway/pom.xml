@@ -70,6 +70,17 @@
       <version>3.6.0</version>
       <scope>test</scope>
     </dependency>
+  <!-- OAuth2 login (client) -->
+      <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-oauth2-client</artifactId>
+  </dependency>
+
+  <!-- Resource server (JWT bearer op API) -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+  </dependency>
   </dependencies>
 
   <build>
