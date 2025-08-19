@@ -25,3 +25,5 @@ Thumbs.db
 # Node.js (indien je een frontend hebt)
 node_modules/
 dist/
+.env
+.env.prod

@@ -2,6 +2,22 @@ server:
   port: 8080   # Gateway draait op poort 8080
 
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
+
+      resourceserver:
+        jwt:
+          issuer-uri: https://accounts.google.com
   application:
     name: gateway   # Naam van de Spring Boot app
 
