@@ -123,7 +123,7 @@ volumes:
 1. Clone de repository
 
    ```bash
-   git clone https://github.com/<jouw_repo>/fittracker.git
+   git clone https://github.com/EwoudForster/fittracker.git
    cd fittracker
    ```
 
